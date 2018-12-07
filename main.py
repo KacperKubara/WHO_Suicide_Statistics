@@ -1,6 +1,7 @@
 import importlib
 import pandas as pd 
 import numpy as np 
+import seaborn as sns
 import matplotlib.pyplot as plt
 utils = importlib.import_module('utils')
 
@@ -15,7 +16,7 @@ female = dataset[dataset.sex == 'female'].suicides_no.sum(axis = 0)
 male = dataset[dataset.sex == 'male'].suicides_no.sum(axis = 0)
 #print('Female: ' + str(female) + ' ,Male: ' + str(male))
 
-# Display the suicides by gender over the years
+# Suicides by gender over the years
 timespan = list(dataset.year.unique())
 timespan.sort(reverse = False)
 deaths_by_year_male   = list()
@@ -26,17 +27,31 @@ for year in timespan:
 deaths_by_year = pd.DataFrame({'male': deaths_by_year_male,'female': 
                                deaths_by_year_female }, index = timespan)
 #print(deaths_by_year.head())
-#plt.plot(timespan, deaths_by_year.male,'k',timespan, female_scaled, 'r')
+fig1, ax1 = plt.subplots()
+ax1.set_title("Suicides over time")
+ax1.set_ylabel("No. Suicides")
+ax1.set_xlabel("")
+ax1.plot(timespan, deaths_by_year.male,'k',timespan, deaths_by_year.female,'r')
 
-# Sort and display the countries with the biggest suicide rate (suicides_no/population)
-suicide_over_population = deaths_by_year.merge(world_population, left_index=True, right_index=True)
-male_scaled = suicide_over_population.male.divide(suicide_over_population.population)
-female_scaled = suicide_over_population.female.divide(suicide_over_population.population)
-#plt.plot(timespan,male_scaled,'k',timespan, female_scaled, 'r')
-#print(suicide_over_population.head())
 
-# See the suicide distribution across age category
-age_distribution = dataset.drop(columns = ['year', 'country'])
+# Suicide distribution across age category
+age_distribution = dataset.drop(columns = ['year', 'country', 'population'])
 age_distribution = age_distribution.dropna()
-age_distribution = age_distribution.groupby(by = ['sex','age']).sum()
-print(age_distribution)
+age_distribution = age_distribution.groupby(by = ['sex','age'], as_index = False).sum()
+age_distribution.reset_index()
+age_distribution = age_distribution.reindex(labels = [3,0,1,2,4,5,9,6,7,8,10,11],axis = 0)
+# print(age_distribution)
+fig2, ax2 = plt.subplots()
+ax2.set_title("Suicides over age")
+sns.barplot(x = 'age', y = 'suicides_no',hue = 'sex', data = age_distribution, ax = ax2)
+ax2.set_ylabel("No. Suicides")
+ax2.set_xlabel("")
+
+# Relative Suicide distribution across countries (no. suicides/population)
+country_distribution = dataset.drop(columns = ['year','population'])
+country_distribution = country_distribution.groupby(by = ['country'], as_index = False).sum().sort_values(by = ['suicides_no'], ascending = False)
+fig3, ax3 = plt.subplots()
+ax3.set_title("Suicides in countries")
+sns.barplot(x = 'country', y = 'suicides_no', data = country_distribution.head(12), ax = ax3)
+ax3.set_ylabel("No. Suicides")
+ax3.set_xlabel("")
